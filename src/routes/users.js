@@ -10,6 +10,8 @@ router.post("/register", UserController.register);
 
 router.post("/login", UserController.login);
 
+router.get("/", authentication, UserController.get_auth_data);
+
 router.get("/", UserController.get_all_user);
 
 router.get("/:id", authentication, UserController.get_user_by_id);

@@ -23,8 +23,6 @@ app.use("/api/users", users);
 
 app.use("/api/posts", posts);
 
-app.use("/images", express.static("src/assets/uploads"));
-
 app.use((req, res, next) => {
   res.status(401).json({
     error: {

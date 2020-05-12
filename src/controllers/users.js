@@ -22,31 +22,54 @@ JWTToken = user => {
 };
 
 exports.register = (req, res, next) => {
-  User.find({ email: req.body.email }).then(user => {
+  let username = req.body.username.toLowerCase();
+  let mobile = req.body.mobile.toLowerCase();
+  let email = req.body.email.toLowerCase();
+  User.find({ mobile: mobile }).then((user) => {
     if (user.length >= 1) {
       return res
         .status(401)
-        .json({ error: "There is an user with this email ID" });
+        .json({ error: "There is an user with that mobile no!!!" });
     } else {
-      bcrypt.hash(req.body.password, 10, (err, hash) => {
-        if (err) {
-          return res.status(401).json({ error: err.message });
+      User.find({ username: username }).then((user) => {
+        if (user.length >= 1) {
+          return res
+            .status(401)
+            .json({ error: "There is an user with that username!!!" });
         } else {
-          const user = {
-            email: req.body.email,
-            username: req.body.username,
-            fullname: req.body.fullname,
-            mobile: req.body.mobile,
-            password: hash
-          };
-          User.create(user)
-            .then(response =>
-              res.status(200).json({
-                message: "Successfully Created",
-                user: response
-              })
-            )
-            .catch(err => res.status(401).json({ error: err.message }));
+          User.find({ email: email }).then((user) => {
+            if (user.length >= 1) {
+              return res
+                .status(401)
+                .json({ error: "There is an user with that email ID" });
+            } else {
+              bcrypt.hash(req.body.password, 10, (err, hash) => {
+                if (err) {
+                  return res.status(401).json({ error: err.message });
+                } else {
+                  const user = {
+                    email: email,
+                    username: username,
+                    fullname: req.body.fullname,
+                    mobile: mobile,
+                    password: hash,
+                  };
+                  User.create(user)
+                    .then((response) => {
+                      Role.create({ user: response._id });
+                      Permission.create({ user: response._id });
+                      res.status(200).json({
+                        message: "Successfully Created",
+                        user: response,
+                      });
+                    })
+                    .catch((err) =>
+                      res.status(401).json({ error: err.message })
+                    );
+                }
+              });
+            }
+          });
         }
       });
     }
@@ -54,10 +77,13 @@ exports.register = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
-  User.findOne({ email: req.body.email })
-    .then(user => {
+  let email = req.body.email.toLowerCase();
+  User.findOne({ email: email })
+    .then((user) => {
       if (!user) {
-        return res.status(401).json({ error: "There is no User with that ID" });
+        return res
+          .status(401)
+          .json({ error: "There is no User with that E-mail ID" });
       }
       bcrypt.compare(req.body.password, user.password, (err, response) => {
         if (err) {
@@ -70,7 +96,15 @@ exports.login = (req, res, next) => {
         return res.status(401).json({ error: "The Password Is Incorrect" });
       });
     })
-    .catch(err => res.status(401).json({ error: err.message }));
+    .catch((err) => res.status(401).json({ error: err.message }));
+};
+
+exports.get_auth_data = (req, res, next) => {
+  User.findById(req.user.sub)
+    .then((user) => {
+      res.status(200).json(user);
+    })
+    .catch((err) => res.status(401).json({ error: err.message }));
 };
 
 exports.get_all_user = (req, res, next) => {
